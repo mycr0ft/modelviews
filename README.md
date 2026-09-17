@@ -1,7 +1,16 @@
-# Python Modeling Language Diagramming (PyMLDiagram)
+# modelviews — diagrams as views of UML/SysML models
 
-I am renaming and forking the excellent work of Ray Madachy to add some additional diagrams and to integrate 
-this diagram library with the SysMLv2 standard. I will not be changing the license terms. 
+**modelviews** renders diagrams as views of real models: each emitter
+returns a graphviz graph *and* — for SysML v2 — the equivalent textual
+notation. It began as a fork of Ray Madachy's PyML (MIT, license terms
+unchanged); the name is new because the scope grew past "Python
+Modeling Language diagrams" into metamodel-driven diagramming.
+
+## Scope
+
+UML 2.5.1 and SysML first (v1 profiles and the v2 textual + graphical
+notation). Later: UAF/UPDM (their rich color/symbol vocabularies) and
+BPMN (pools, lanes, participant stick figures).
 
 Copyright (c) 2022 Ray Madachy
 Copyright (c) 2025 Jon R. Fox

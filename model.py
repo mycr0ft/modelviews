@@ -1,4 +1,4 @@
-"""Direction 2 — PyMLDiagram re-imagined over the uml2py metamodel.
+"""Direction 2 — modelviews re-imagined over the uml2py metamodel.
 
 Diagrams here are views over *actual* UML 2.5.1 / SysML v1 objects
 (gen.uml25 classes, gen.sysml stereotype classes such as Block and

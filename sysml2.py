@@ -1,4 +1,4 @@
-"""SysML v2 emitters for PyMLDiagram (direction 1).
+"""SysML v2 emitters for modelviews (direction 1).
 
 Each function keeps PyML's ergonomics (lists of plain strings/tuples)
 but emits SysML v2: a graphviz graph drawn in SysML v2 graphical
