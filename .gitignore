@@ -1,0 +1,8 @@
+__pycache__/
+.venv/
+sysml2_*.png
+sysml2_*.svg
+sysml2_*.sysml
+vehicle_*.svg
+dodaf_*.svg
+*.gv
