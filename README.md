@@ -62,7 +62,11 @@ Two new modules (2026-09, work in progress):
   StateMachine/Region/State/Transition with SignalEvent triggers and
   Constraint guards, composite states as nested clusters),
   `activity_view` (real Activity nodes/edges), `use_case_view`
-  (UseCase/Actor/Association/Include/Extend). SysML v1:
+  (UseCase/Actor/Association/Include/Extend), `sequence_view`
+  (Interaction/Lifeline/Message: lifeline columns with «actor»
+  headers, chronology from fragment order, arrow styles from
+  messageSort — filled sync, open async, dashed reply).
+  SysML v1:
   `internal_block_view` (parts with TD-PORT stubs, ownedConnectors
   anchored at part:port), `package_view` (folders as clusters,
   «use»/«import» dependencies). `from_xmi` loads XMI 2.1 corpora.

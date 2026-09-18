@@ -586,6 +586,109 @@ def package_view(root, filename=None, format="svg", max_nodes=60):
     return g
 
 
+def sequence_view(interaction, filename=None, format="svg", spacing=2.2,
+                  row_height=0.55):
+    """Sequence diagram from a real Interaction (UML 2.5.1).
+
+    Notation: lifeline headers as boxes ("«actor"\nname" when the
+    lifeline's represents is typed by an Actor, else "name : Type"),
+    dashed vertical lifelines, and messages as horizontal arrows at
+    chronological rows. Chronology = the order of
+    MessageOccurrenceSpecifications in interaction.fragment (insertion
+    order on constructed models); sendEvent locates the row. Arrow
+    styles follow messageSort: synchCall/unset = solid filled,
+    asynchCall/asynchSignal = solid open vee, reply = dashed open vee.
+
+    (Execution-specification activation bars are not drawn yet —
+    start/finish need ExecutionOccurrenceSpecification wiring.)"""
+    g = graphviz.Digraph(_name(interaction), format=format, engine="neato",
+                         node_attr={"fontname": "Helvetica"})
+    g.attr(label=f"  sequence diagram [{_name(interaction)}]",
+           labelloc="t", labeljust="l", fontname="Courier", fontsize="13")
+
+    # columns: lifelines in declaration order
+    lls = list(interaction.lifeline)
+    col = {id(ll): i * spacing for i, ll in enumerate(lls)}
+
+    def _header(ll):
+        rep = getattr(ll, "represents", None)
+        t = getattr(rep, "type", None) if rep is not None else None
+        tname = _name(t) if t is not None else ""
+        if isinstance(t, U.Actor):
+            return f"«actor»\\n{_name(ll)}"
+        if tname and _name(ll) not in (tname, ""):
+            return f"{_name(ll)} : {tname}"
+        return _name(ll) or "?"
+
+    # chronological rows from fragment order
+    occ_row = {}
+    for f in interaction.fragment:
+        if isinstance(f, U.MessageOccurrenceSpecification):
+            occ_row.setdefault(id(f), len(occ_row))
+
+    # points where messages touch lifelines
+    points = {}      # (id(lifeline), row) -> node name
+    for m in interaction.message:
+        for end in (m.sendEvent, m.receiveEvent):
+            if end is None or id(end) not in occ_row:
+                continue
+            ll = end.covered
+            if ll is None or id(ll) not in col:
+                continue
+            row = occ_row[id(end)]
+            key = (id(ll), row)
+            if key not in points:
+                name = f"p{len(points)}"
+                points[key] = name
+                g.node(name, shape="point", width=".06",
+                       pos=f"{col[id(ll)]},{-row * row_height}!")
+
+    # lifeline heads and dashed verticals down each column
+    last_row = {id(ll): -1 for ll in lls}
+    for (llid, row) in points:
+        last_row[llid] = max(last_row[llid], row)
+    for ll in lls:
+        x = col[id(ll)]
+        g.node(_id(ll), label=_header(ll), shape="box", style="rounded",
+               pos=f"{x},{row_height}!")
+        if last_row[id(ll)] >= 0:
+            g.edge(_id(ll), points[(id(ll), last_row[id(ll)])],
+                   style="dashed", arrowhead="none")
+
+    # message arrows at their send row
+    for m in interaction.message:
+        se, re_ = m.sendEvent, m.receiveEvent
+        if se is None or se.covered is None:
+            continue
+        row = occ_row.get(id(se))
+        if row is None or (id(se.covered), row) not in points:
+            continue
+        src = points[(id(se.covered), row)]
+        dst = None
+        if m.receiveEvent is not None and id(m.receiveEvent) in occ_row:
+            rrow = occ_row[id(m.receiveEvent)]
+            dst = points.get((id(m.receiveEvent.covered), rrow))
+        if dst is None:
+            continue
+        sort = getattr(m.messageSort, "name", None) if m.messageSort else None
+        attrs = {"fontname": "Helvetica", "fontsize": "10"}
+        if sort == "reply":
+            attrs.update(style="dashed", arrowhead="vee")
+        elif sort in ("asynchCall", "asynchSignal"):
+            attrs.update(arrowhead="vee")
+        else:                                   # synchCall / unset
+            attrs.update(arrowhead="normal")
+        lbl = _name(m)
+        if lbl:
+            attrs.update(headlabel=lbl, labeldistance=f"{spacing * 2.6}",
+                         labelangle="-6")
+        g.edge(src, dst, **attrs)
+
+    if filename:
+        g.render(filename=filename, format=format, cleanup=True)
+    return g
+
+
 def internal_block_view(block, filename=None, format="svg"):
     """SysML v1 internal block diagram from a real Block: parts
     (composite-typed properties) as HTML-table boxes with their type's

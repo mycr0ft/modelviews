@@ -159,6 +159,40 @@ print("ibd: port stubs/anchors =",
       ibdv.source.count("FIXEDSIZE"),
       "eng:pout" in ibdv.source and "eng:pin" in ibdv.source)
 
+# ── sequence view from a real Interaction ───────────────────────────
+inter = U.Interaction(name="RequestRide")
+riderp = U.Property(name="rider", type=U.Actor(name="Rider"))
+appc = U.Class(name="RideApp")
+payc = U.Class(name="Payments")
+ll_r = U.Lifeline(name="rider", represents=riderp)
+ll_a = U.Lifeline(name="app", represents=U.Property(name="app", type=appc))
+ll_p = U.Lifeline(name="payments",
+                  represents=U.Property(name="pay", type=payc))
+inter.lifeline.extend([ll_r, ll_a, ll_p])
+
+
+def _msg(name, send_ll, recv_ll, sort=None):
+    m = U.Message(name=name)
+    if sort is not None:
+        m.messageSort = sort
+    m.sendEvent = U.MessageOccurrenceSpecification(covered=send_ll)
+    m.receiveEvent = U.MessageOccurrenceSpecification(covered=recv_ll)
+    inter.message.append(m)
+    inter.fragment.extend([m.sendEvent, m.receiveEvent])
+
+
+_msg("requestRide", ll_r, ll_a)
+_msg("processPayment", ll_a, ll_p)
+_msg("paymentOK", ll_p, ll_a, U.MessageSort.reply)
+_msg("rideAccepted", ll_a, ll_r, U.MessageSort.reply)
+seqv = model.sequence_view(inter, filename="vehicle_sequence")
+print("seq: actor header/points/sync-filled/reply-dashed/lifelines =",
+      seqv.source.count("«actor»"),
+      seqv.source.count("shape=point"),
+      seqv.source.count("arrowhead=normal"),
+      seqv.source.count("arrowhead=vee"),
+      seqv.source.count("style=dashed"))
+
 # ── the same machinery over an OMG-published corpus ─────────────────
 import os
 dodaf = "/mnt/TBFox/DoDAFLibrary.xmi"
