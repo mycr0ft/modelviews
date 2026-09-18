@@ -13,4 +13,5 @@ OR_node*.svg
 examples/*.svg
 examples/*.gv
 examples/skate_cpm*
+examples/skateboard_*
 examples/vmodel_dsm*
