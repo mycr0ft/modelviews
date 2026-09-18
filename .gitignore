@@ -7,3 +7,9 @@ vehicle_*.svg
 dodaf_*.svg
 *.gv
 testsysml2.dot
+motor_fta*.svg
+motor_fta*.gv
+AND_node.svg
+OR_node*.svg
+examples/*.svg
+examples/*.gv

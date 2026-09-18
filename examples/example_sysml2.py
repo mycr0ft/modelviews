@@ -1,8 +1,10 @@
 """Exercise the SysML v2 emitters with the skateboard example content.
 
-Run:  .venv/bin/python example_sysml2.py
+Run:  .venv/bin/python examples/example_sysml2.py
 """
+import os
 import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import sysml2
 

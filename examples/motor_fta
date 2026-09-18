@@ -1,0 +1,89 @@
+digraph G {
+	node [color=black fontsize=11 shape=plaintext]
+	edge [arrowsize=0 arrowtail=none dir=both fontname=arial fontsize=11 penwidth=2]
+	rankdir=TB splines=line
+	"Motor overheats" [label=<
+            <table border="0" cellborder="0" cellspacing="0" cellpadding="0">
+              <tr>
+            <td >
+            <table border="0" cellborder="1" cellspacing="0" cellpadding="0">
+              <tr><td port="top">Motor overheats</td></tr>
+            </table>
+            </td>
+              </tr>
+              <tr>
+                <td port="Or"><img src="OR_node.svg"/></td>
+              </tr>
+              <tr>
+                <td><img src="OR_node_bottom.svg"/></td>
+              </tr>
+            </table>>]
+	"Motor overheats":Or:s -> "No cooling":top:n
+	"Motor overheats":Or:s -> Overload:top:n
+	"No cooling" [label=<
+            <table border="0" cellborder="0" cellspacing="0" cellpadding="0">
+              <tr>
+            <td >
+            <table border="0" cellborder="1" cellspacing="0" cellpadding="0">
+              <tr><td port="top">No cooling</td></tr>
+            </table>
+            </td>
+              </tr>
+              <tr>
+                <td port="And"><img src="AND_node.svg"/></td>
+              </tr>
+              <tr>
+                <td><img src="OR_node_bottom.svg"/></td>
+              </tr>
+            </table>>]
+	"No cooling":And:s -> "Fan failure":top:n
+	"No cooling":And:s -> "Thermal cutoff fail":top:n
+	"Fan failure" [label=<
+            <table border="0" cellborder="0" cellspacing="0" cellpadding="0">
+              <tr>
+            <td >
+            <table border="0" cellborder="1" cellspacing="0" cellpadding="0">
+              <tr><td port="top">Fan failure</td></tr>
+            </table>
+            </td>
+              </tr>
+              <tr>
+                <td port="Basic"></td>
+              </tr>
+              <tr>
+                <td></td>
+              </tr>
+            </table>>]
+	"Thermal cutoff fail" [label=<
+            <table border="0" cellborder="0" cellspacing="0" cellpadding="0">
+              <tr>
+            <td >
+            <table border="0" cellborder="1" cellspacing="0" cellpadding="0">
+              <tr><td port="top">Thermal cutoff<BR/>fail</td></tr>
+            </table>
+            </td>
+              </tr>
+              <tr>
+                <td port="Basic"></td>
+              </tr>
+              <tr>
+                <td></td>
+              </tr>
+            </table>>]
+	Overload [label=<
+            <table border="0" cellborder="0" cellspacing="0" cellpadding="0">
+              <tr>
+            <td >
+            <table border="0" cellborder="1" cellspacing="0" cellpadding="0">
+              <tr><td port="top">Overload</td></tr>
+            </table>
+            </td>
+              </tr>
+              <tr>
+                <td port="Basic"></td>
+              </tr>
+              <tr>
+                <td></td>
+              </tr>
+            </table>>]
+}

@@ -1,8 +1,10 @@
 """Diagrams from actual UML/SysML metamodel objects (uml2py).
 
-Run:  .venv/bin/python example_model.py
+Run:  .venv/bin/python examples/example_model.py
 """
+import os
 import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import model
 

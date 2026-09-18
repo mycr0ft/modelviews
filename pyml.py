@@ -1,7 +1,7 @@
 """
-PyML Version .195
 
 Copyright (c) 2022-2023 Ray Madachy
+Copyright (c) 2025 Jon R. Fox
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
@@ -9,13 +9,12 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 """
-
 import graphviz
 import textwrap
 import os
 import sys
 from os.path import exists
-import pandas as pd
+# import pandas as pd # No Pandas. Removing some diagram for fault tree analysis
 from copy import deepcopy
 
 # text for SVG included files
@@ -591,7 +590,7 @@ def fault_tree_diagram(ft, filename=None, format='svg'):
         fault_tree.render()
 
     return fault_tree
-
+HIDDEN="""
 def read_fault_tree_excel(filename):
     df = pd.read_excel(filename,
             index_col=0,            # the first column contains the index labels (numbers assigned otherwise)
@@ -611,6 +610,8 @@ def read_fault_tree_excel(filename):
     # convert each event list to tuple
     fault_tree_list = [tuple(event) for event in fault_tree_list_of_lists]
     return fault_tree_list
+"""
+
 
 """
 2013.3.12 CKS

@@ -12,6 +12,18 @@ UML 2.5.1 and SysML first (v1 profiles and the v2 textual + graphical
 notation). Later: UAF/UPDM (their rich color/symbol vocabularies) and
 BPMN (pools, lanes, participant stick figures).
 
+## Lineage and assorted analyses
+
+`pyml.py` retains Ray Madachy's PyML vocabulary (context, activity,
+use case, sequence, WBS/tree diagrams) plus his assortment of
+systems-engineering analysis diagrams: fault trees with symbolic and
+MOCUS minimal cut sets, quantitative FTA probability propagation, the
+critical path method (embedding CKS's 2013 `criticalpath`
+implementation), and the design structure matrix. These are
+analyses with tuple inputs, **not** UML/SysML metamodel views — they
+stay as demonstrated lineage under `examples/`
+(`example_fta.py`, `example_cpm.py`, `example_dsm.py`).
+
 Copyright (c) 2022 Ray Madachy
 Copyright (c) 2025 Jon R. Fox
 
@@ -36,7 +48,7 @@ Two new modules (2026-09, work in progress):
   `part_tree` (General View), `interconnection` (Interconnection
   View), `action_flow` (Action Flow View), `state_machine` (State
   Transition View), `use_case`, `context_diagram`.
-  Run `python example_sysml2.py` — 6/6 textual models parse.
+  Run `python examples/example_sysml2.py` — 6/6 textual models parse.
 
 - **`model.py`** — diagrams as views over *actual* UML 2.5.1 / SysML
   metamodel objects from [uml2py](https://github.com/mycr0ft/uml2py)
@@ -54,5 +66,5 @@ Two new modules (2026-09, work in progress):
   `internal_block_view` (parts with TD-PORT stubs, ownedConnectors
   anchored at part:port), `package_view` (folders as clusters,
   «use»/«import» dependencies). `from_xmi` loads XMI 2.1 corpora.
-  Run `python example_model.py` — includes a class diagram over the
-  OMG-published DoDAF Library.
+  Run `python examples/example_model.py` — includes a class diagram
+  over the OMG-published DoDAF Library.
