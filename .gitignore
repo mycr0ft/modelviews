@@ -7,9 +7,10 @@ vehicle_*.svg
 dodaf_*.svg
 *.gv
 testsysml2.dot
-motor_fta*.svg
-motor_fta*.gv
+motor_fta*
 AND_node.svg
 OR_node*.svg
 examples/*.svg
 examples/*.gv
+examples/skate_cpm*
+examples/vmodel_dsm*
