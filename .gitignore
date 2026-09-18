@@ -6,3 +6,4 @@ sysml2_*.sysml
 vehicle_*.svg
 dodaf_*.svg
 *.gv
+testsysml2.dot
