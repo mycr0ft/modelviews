@@ -311,6 +311,332 @@ def block_diagram(root, name=None, filename=None, format="svg",
     return g
 
 
+# ── behavioral & SysML v1 views (model objects → graphviz) ───────────
+def _id(n):
+    return f"n{id(n)}"
+
+
+def state_machine_view(sm, filename=None, format="svg"):
+    """State machine diagram from real StateMachine/Region/State/
+    Transition objects. UML notation: initial pseudostate = filled
+    circle, FinalState = bullseye, state = rounded box (composite
+    states become nested clusters), choice = diamond; transition
+    labels are the UML anatomy "[guard] trigger / effect" with
+    SignalEvent/CallEvent resolution."""
+    g = graphviz.Digraph(_name(sm), format=format, engine="dot",
+                         node_attr={"fontname": "Helvetica"})
+    g.attr(rankdir="TB", nodesep="0.4", ranksep="0.6")
+    g.attr(label=f"  state machine [{_name(sm)}]", labelloc="t",
+           labeljust="l", fontname="Courier", fontsize="13")
+
+    def _triggers(t):
+        out = []
+        for trg in t.trigger:
+            ev = trg.event
+            if ev is None:
+                continue
+            sig = getattr(ev, "signal", None)
+            op = getattr(ev, "operation", None)
+            if sig is not None:
+                out.append(sig.name or "?")
+            elif op is not None:
+                out.append(op.name or "?")
+            elif isinstance(ev, U.AnyReceiveEvent):
+                out.append("all")
+            else:
+                out.append(type(ev).__name__)
+        return " ".join(out)
+
+    def _tlabel(t):
+        parts = []
+        gd = getattr(t, "guard", None)
+        body = getattr(getattr(gd, "specification", None), "body", None)
+        if body:
+            parts.append("[" + body[0] + "]")
+        sig = _triggers(t)
+        if sig:
+            parts.append(sig)
+        eff = getattr(t, "effect", None)
+        if eff is not None and getattr(eff, "name", None):
+            parts.append("/ " + eff.name)
+        return " ".join(parts)
+
+    def _region(r, sub):
+        for v in r.subvertex:
+            if isinstance(v, U.FinalState):
+                sub.node(_id(v), shape="doublecircle", style="filled",
+                         fillcolor="black", width=".18", height=".18",
+                         label="")
+            elif isinstance(v, U.Pseudostate):
+                k = getattr(v.kind, "name", None) if v.kind else None
+                if k == "choice":
+                    sub.node(_id(v), shape="diamond",
+                             label=_name(v) or "", height=".5",
+                             width=".9")
+                elif k == "junction":
+                    sub.node(_id(v), shape="diamond", label="",
+                             width=".25", height=".25", fixedsize="true")
+                elif k == "initial":
+                    sub.node(_id(v), shape="circle", style="filled",
+                             fillcolor="black", width=".14", height=".14",
+                             label="")
+                else:
+                    sub.node(_id(v), shape="circle", style="filled",
+                             fillcolor="black", width=".12", height=".12",
+                             label="")
+            elif isinstance(v, U.State):
+                if v.region:
+                    with sub.subgraph(name=f"cluster_s{id(v)}") as c:
+                        c.attr(label=_name(v), labeljust="l",
+                               style="rounded", color="gray40",
+                               fontname="Helvetica", fontsize="11")
+                        for sr in v.region:
+                            _region(sr, c)
+                else:
+                    lines = []
+                    for tag, b in (("entry", v.entry),
+                                   ("do", getattr(v, "do", None)),
+                                   ("exit", v.exit)):
+                        if b is not None and getattr(b, "name", None):
+                            lines.append(f"{tag} / {b.name}")
+                    lbl = _name(v)
+                    if lines:
+                        lbl += "\\n" + "\\n".join(lines)
+                    sub.node(_id(v), shape="box", style="rounded",
+                             label=lbl)
+        for t in r.transition:
+            if t.source is None or t.target is None:
+                continue
+            sub.edge(_id(t.source), _id(t.target),
+                     label=_tlabel(t) or None, fontname="Helvetica",
+                     fontsize="10")
+
+    for r in list(sm.region):
+        _region(r, g)
+    if filename:
+        g.render(filename=filename, format=format, cleanup=True)
+    return g
+
+
+def use_case_view(pkg, filename=None, format="svg"):
+    """Use-case diagram from real UseCase/Actor/Association/Include/
+    Extend objects in a Package. UML notation: use case = ellipse,
+    actor = «actor» rectangle (the spec-legal alternative to the
+    stick figure), association = plain solid line, include/extend =
+    dashed open arrow with guillemet keyword; use cases sit inside
+    the system-boundary cluster, actors outside it."""
+    g = graphviz.Digraph(_name(pkg), format=format, engine="dot",
+                         node_attr={"fontname": "Helvetica"})
+    g.attr(rankdir="LR", nodesep="0.4", ranksep="1.0")
+    g.attr(label=f"  use case diagram [{_name(pkg)}]", labelloc="t",
+           labeljust="l", fontname="Courier", fontsize="13")
+
+    ucs, actors = [], []
+    for e in query.walk(pkg):
+        if isinstance(e, U.UseCase):
+            ucs.append(e)
+        elif isinstance(e, U.Actor):
+            actors.append(e)
+    scope = {id(e) for e in ucs + actors}
+
+    with g.subgraph(name="cluster_boundary") as b:
+        b.attr(label=f"«system» {_name(pkg)}", labeljust="l",
+               style="rounded", color="black", fontname="Helvetica",
+               fontsize="11")
+        for uc in ucs:
+            b.node(_id(uc), shape="ellipse", label=_name(uc))
+    for a in actors:
+        g.node(_id(a), label=f"«actor»\n{_name(a)}", shape="box",
+               style="rounded")
+
+    for e in query.walk(pkg):
+        if isinstance(e, U.Association):
+            ends = list(e.memberEnd) or list(e.ownedEnd)
+            tps = [getattr(x, "type", None) for x in ends]
+            if len(tps) == 2 and all(id(t) in scope for t in tps):
+                g.edge(_id(tps[0]), _id(tps[1]), arrowhead="none",
+                       arrowtail="none")
+        elif isinstance(e, U.Include):
+            if e.addition is not None and id(e.addition) in scope:
+                g.edge(_id(derived.owner(e) or e), _id(e.addition),
+                       style="dashed", arrowhead="vee",
+                       label="«include»", fontname="Helvetica",
+                       fontsize="10")
+        elif isinstance(e, U.Extend):
+            base = getattr(e, "extendedCase", None)
+            ext = getattr(e, "extension", None)
+            if base is not None and ext is not None and id(ext) in scope:
+                g.edge(_id(ext), _id(base), style="dashed",
+                       arrowhead="vee", label="«extend»",
+                       fontname="Helvetica", fontsize="10")
+
+    if filename:
+        g.render(filename=filename, format=format, cleanup=True)
+    return g
+
+
+def activity_view(act, filename=None, format="svg"):
+    """Activity diagram from a real Activity: InitialNode = filled
+    circle, ActivityFinalNode = bullseye, Decision/Merge = diamond,
+    Fork/Join = filled bar, actions = rounded boxes; ControlFlow and
+    ObjectFlow both render as edges (object flows label themselves
+    from their target object node)."""
+    g = graphviz.Digraph(_name(act), format=format, engine="dot",
+                         node_attr={"fontname": "Helvetica"})
+    g.attr(rankdir="TB", nodesep="0.4", ranksep="0.6")
+    g.attr(label=f"  activity diagram [{_name(act)}]", labelloc="t",
+           labeljust="l", fontname="Courier", fontsize="13")
+
+    def _node(n):
+        if isinstance(n, U.InitialNode):
+            g.node(_id(n), shape="circle", style="filled",
+                   fillcolor="black", width=".14", height=".14",
+                   label="")
+        elif isinstance(n, (U.ActivityFinalNode, U.FlowFinalNode)):
+            g.node(_id(n), shape="doublecircle", style="filled",
+                   fillcolor="black", width=".18", height=".18",
+                   label="")
+        elif isinstance(n, (U.DecisionNode, U.MergeNode)):
+            g.node(_id(n), shape="diamond", label=_name(n) or "",
+                   height=".6", width="1.1")
+        elif isinstance(n, (U.ForkNode, U.JoinNode)):
+            g.node(_id(n), shape="box", style="filled",
+                   fillcolor="black", fixedsize="true", width="1.4",
+                   height=".08", label="")
+        elif isinstance(n, (U.OpaqueAction, U.CallBehaviorAction,
+                            U.Action)):
+            lbl = _name(n) or _name(getattr(n, "behavior", None)) \
+                or type(n).__name__
+            g.node(_id(n), shape="box", style="rounded", label=lbl)
+        elif isinstance(n, (U.StructuredActivityNode,)):
+            g.node(_id(n), shape="box", style="rounded", label=_name(n))
+        else:
+            g.node(_id(n), shape="box", label=_name(n) or
+                   type(n).__name__)
+
+    for n in act.node:
+        _node(n)
+    for e in act.edge:
+        if e.source is None or e.target is None:
+            continue
+        lbl = None
+        body = getattr(getattr(e, "guard", None), "body", None)
+        if body:
+            lbl = "[" + body[0] + "]"
+        g.edge(_id(e.source), _id(e.target),
+               style="dashed" if isinstance(e, U.ObjectFlow) else None,
+               label=lbl, fontname="Helvetica", fontsize="10")
+    if filename:
+        g.render(filename=filename, format=format, cleanup=True)
+    return g
+
+
+def package_view(root, filename=None, format="svg", max_nodes=60):
+    """Package diagram from a real Package tree: folders with guillemet
+    keywords nested as graphviz clusters, owned types as boxes, UML
+    Dependency as dashed open arrow «use», PackageImport as dashed
+    open arrow «import» (importing -> imported)."""
+    g = graphviz.Digraph(_name(root), format=format, engine="dot",
+                         node_attr={"fontname": "Helvetica"})
+    g.attr(rankdir="TB", compound="true", nodesep="0.4",
+           ranksep="0.7")
+    g.attr(label=f"  package diagram [{_name(root)}]", labelloc="t",
+           labeljust="l", fontname="Courier", fontsize="13")
+    counter = [0]
+
+    def _types_in(p):
+        return [e for e in getattr(p, "packagedElement", [])
+                if isinstance(e, U.Classifier)]
+
+    def _pkgs_in(p):
+        return [e for e in getattr(p, "packagedElement", [])
+                if isinstance(e, U.Package)]
+
+    def _pkg_node(p, parent):
+        counter[0] += 1
+        cname = f"cluster_{counter[0]}"
+        with parent.subgraph(name=cname) as c:
+            c.attr(label=f"«package» {_name(p)}", labeljust="l",
+                   style="rounded", color="black", fontname="Helvetica",
+                   fontsize="11")
+            for t in _types_in(p):
+                c.node(_id(t), label=f"{_kind(t)}\\n{_name(t)}",
+                       shape="box", fontsize="10")
+            for sp in _pkgs_in(p):
+                _pkg_node(sp, c)
+        return cname
+
+    _pkg_node(root, g)
+    for e in query.walk(root):
+        if isinstance(e, U.Dependency):
+            for cl in e.client:
+                for sup in e.supplier:
+                    g.edge(_id(cl), _id(sup), style="dashed",
+                           arrowhead="vee", label="«use»",
+                           fontname="Helvetica", fontsize="10")
+        elif isinstance(e, U.PackageImport):
+            imp = e.importedPackage
+            owner = derived.owner(e)
+            if imp is not None and owner is not None:
+                g.edge(_id(owner), _id(imp), style="dashed",
+                       arrowhead="vee", label="«import»",
+                       fontname="Helvetica", fontsize="10")
+    if filename:
+        g.render(filename=filename, format=format, cleanup=True)
+    return g
+
+
+def internal_block_view(block, filename=None, format="svg"):
+    """SysML v1 internal block diagram from a real Block: parts
+    (composite-typed properties) as HTML-table boxes with their type's
+    Ports as TD-PORT stubs, ownedConnectors as plain lines anchored at
+    part:port (flat partWithPort connectors only)."""
+    parts = [a for a in block.ownedAttribute
+             if isinstance(a, U.Property) and not isinstance(a, U.Port)
+             and isinstance(getattr(a, "type", None), U.Classifier)]
+    scope = {id(a) for a in parts}
+
+    g = graphviz.Digraph(_name(block), format=format, engine="dot",
+                         node_attr={"fontname": "Helvetica"})
+    g.attr(rankdir="LR", nodesep="0.5", ranksep="1.2", splines="ortho")
+    g.attr(label=f"  internal block diagram [{_name(block)}]",
+           labelloc="t", labeljust="l", fontname="Courier", fontsize="13")
+
+    port_owner = {}   # id(port) -> part
+    for a in parts:
+        stubs = "".join(
+            f"<TD PORT='{p.name}' WIDTH='9' HEIGHT='9' "
+            f"FIXEDSIZE='true' BGCOLOR='black'></TD>"
+            for p in a.type.ownedAttribute if isinstance(p, U.Port))
+        for p in a.type.ownedAttribute:
+            if isinstance(p, U.Port):
+                port_owner[id(p)] = a
+        label = (f"<<TABLE BORDER='0' CELLBORDER='1' CELLSPACING='0' "
+                 f"CELLPADDING='4' STYLE='ROUNDED'>"
+                 f"<TR><TD>{a.name} : {_type_label(a)}</TD></TR>"
+                 f"<TR>{stubs}</TR></TABLE>>") if stubs else \
+            (f"<<TABLE BORDER='0' CELLBORDER='1' CELLSPACING='0' "
+             f"CELLPADDING='4' STYLE='ROUNDED'>"
+             f"<TR><TD>{a.name} : {_type_label(a)}</TD></TR>"
+             f"</TABLE>>")
+        g.node(_name(a), label=label, shape="plain")
+
+    for c in block.ownedConnector:
+        roles = [e.role for e in c.end if e.role is not None]
+        anchors = []
+        for r in roles:
+            if isinstance(r, U.Port) and id(r) in port_owner:
+                anchors.append(f"{_name(port_owner[id(r)])}:{r.name}")
+            elif isinstance(r, U.Property) and id(r) in scope:
+                anchors.append(_name(r))
+        if len(anchors) == 2:
+            g.edge(anchors[0], anchors[1], arrowhead="none",
+                   arrowtail="none")
+    if filename:
+        g.render(filename=filename, format=format, cleanup=True)
+    return g
+
+
 def from_xmi(path, **kw):
     """Load an XMI 2.1 file with uml2py's reader and return the model
     (roots, objects). Requires lxml in this venv."""

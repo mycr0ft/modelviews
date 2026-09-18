@@ -44,7 +44,15 @@ Two new modules (2026-09, work in progress):
   Edges exist only where the metamodel says so: Generalization ->
   hollow triangle, composite aggregation -> filled diamond at the
   owner (E3 `derived` semantics), typed attributes -> association
-  lines with spec-derived multiplicities. `class_diagram` and
-  `block_diagram` take a real Package root; `from_xmi` loads XMI 2.1
-  corpora. Run `python example_model.py` — includes a class diagram
-  over the OMG-published DoDAF Library.
+  lines with spec-derived multiplicities. Structure views:
+  `class_diagram` / `block_diagram` over a real Package root.
+  Behavioral views: `state_machine_view` (real
+  StateMachine/Region/State/Transition with SignalEvent triggers and
+  Constraint guards, composite states as nested clusters),
+  `activity_view` (real Activity nodes/edges), `use_case_view`
+  (UseCase/Actor/Association/Include/Extend). SysML v1:
+  `internal_block_view` (parts with TD-PORT stubs, ownedConnectors
+  anchored at part:port), `package_view` (folders as clusters,
+  «use»/«import» dependencies). `from_xmi` loads XMI 2.1 corpora.
+  Run `python example_model.py` — includes a class diagram over the
+  OMG-published DoDAF Library.
